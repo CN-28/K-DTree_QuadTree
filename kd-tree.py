@@ -54,6 +54,13 @@ class KDTree:
 
         return curr.value
 
+    def get_maximal_point(self):
+        curr = self.root
+        while curr.left is not None and curr.right is not None:
+            curr = curr.right
+
+        return curr.value
+
     def get_intersection(self, area1: Rectangle, area2: Rectangle) -> Rectangle or None:
         first_point = [max(cor1, cor2) for cor1, cor2 in zip(area1[0], area2[0])]
         second_point = [min(cor1, cor2) for cor1, cor2 in zip(area1[1], area2[1])]
@@ -63,6 +70,14 @@ class KDTree:
                 return None
 
         return first_point, second_point
+
+    def get_all_leaves_in_subtree(self, root: KDTNode):
+        if root is None:
+            return []
+        if root.left is None and root.right is None:
+            return [root.value]
+
+        return self.get_all_leaves_in_subtree(root.left) + self.get_all_leaves_in_subtree(root.right)
 
     def _find_points_util(self, searched_region: Rectangle, root: KDTNode, current_region: Rectangle,
                           depth: int) -> list:
@@ -79,16 +94,18 @@ class KDTree:
         right_region = (right_child_region_left_limit, current_region[1])
 
         if self.does_rectangle_include(searched_region, left_region):
-            return  # all leaves
+            return self.get_all_leaves_in_subtree(root.left)
         elif self.get_intersection(searched_region, left_region) is not None:
             ans += self._find_points_util(searched_region, root.left, left_region, depth + 1)
 
         if self.does_rectangle_include(searched_region, right_region):
-            return  # all leaves
+            return self.get_all_leaves_in_subtree(root.right)
         elif self.get_intersection(searched_region, right_region) is not None:
             ans += self._find_points_util(searched_region, root.right, right_region, depth + 1)
 
         return ans
 
-    def find_points_in_area(self, x1: float, y1: float, x2: float, y2: float):
-        return self._find_points_util(x1, y1, x2, y2, self.root)
+    def find_points_in_area(self, area: Rectangle):
+        min_point = self.get_minimal_point()
+        max_point = self.get_maximal_point()
+        return self._find_points_util(area, self.root, (min_point, max_point), 0)
