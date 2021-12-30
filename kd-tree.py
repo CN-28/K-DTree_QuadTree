@@ -100,7 +100,7 @@ class KDTree:
                           current_region: Rectangle,
                           depth: int) -> list:
         if root.left is None and root.right is None:
-            if not self._is_inside_area(root.value, searched_region):
+            if root.value is None or not self._is_inside_area(root.value, searched_region):
                 return []
             return [root.value]
 
@@ -114,12 +114,12 @@ class KDTree:
         right_region = (right_child_region_left_limit, current_region[1])
 
         if self.does_rectangle_include(searched_region, left_region):
-            return self.get_all_leaves_in_subtree(root.left)
+            ans += self.get_all_leaves_in_subtree(root.left)
         elif self.get_intersection(searched_region, left_region) is not None:
             ans += self._find_points_util(searched_region, root.left, left_region, depth + 1)
 
         if self.does_rectangle_include(searched_region, right_region):
-            return self.get_all_leaves_in_subtree(root.right)
+            ans += self.get_all_leaves_in_subtree(root.right)
         elif self.get_intersection(searched_region, right_region) is not None:
             ans += self._find_points_util(searched_region, root.right, right_region, depth + 1)
 
@@ -130,8 +130,17 @@ class KDTree:
 
 
 if __name__ == '__main__':
-    points = [[0, 0], [1, 1], [1, 2], [2, 1]]
+    def conv_to_np_float64_points(points: list[list]) -> list[Point]:
+        for p in points:
+            for i in range(len(p)):
+                p[i] = np.float64(p[i])
 
-    tree = KDTree(2, points)
+        return points
 
-    print(tree.find_points_in_area(([0, 0], [1.5, 1.5])))
+
+    pts = conv_to_np_float64_points([
+        [0, 0], [1, 1], [1, 2], [2, 1]
+    ])
+    tree = KDTree(2, pts)
+
+    print(tree.find_points_in_area(([np.float64(0), np.float64(0)], [np.float64(1), np.float64(4.5)])))
