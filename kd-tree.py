@@ -1,6 +1,7 @@
 import functools
 
 import numpy as np
+from quickselect import floyd_rivest
 
 Point = list[np.float64]
 Rectangle = tuple[Point, Point]
@@ -50,11 +51,10 @@ class KDTree:
             return KDTNode(points[0])
 
         coordinate_number = depth % self.dimensions
-        points.sort(key=functools.cmp_to_key(lambda a, b: a[coordinate_number] - b[coordinate_number]))
-
-        median_i = len(points) // 2
-        v = max(map(lambda x: x[coordinate_number], points[:median_i]))
-        division_val = (points[median_i][coordinate_number] + v) / 2
+        key = functools.cmp_to_key(lambda a, b: a[coordinate_number] - b[coordinate_number])
+        v1 = floyd_rivest.nth_smallest(points, len(points)//2 - 1, key=key)[coordinate_number]
+        v2 = floyd_rivest.nth_smallest(points, len(points)//2, key=key)[coordinate_number]
+        division_val = (v1 + v2) / 2
 
         left_points = [p for p in points if p[coordinate_number] <= division_val]
         right_points = [p for p in points if p[coordinate_number] > division_val]
@@ -139,8 +139,9 @@ if __name__ == '__main__':
 
 
     pts = conv_to_np_float64_points([
-        [0, 0], [1, 1], [1, 2], [2, 1]
+        [0, 0], [1, 1], [1, 2], [2, 1],
+        # [4, 0], [3, 1], [2, 2], [3, 3]
     ])
     tree = KDTree(2, pts)
 
-    print(tree.find_points_in_area(([np.float64(0), np.float64(0)], [np.float64(1), np.float64(4.5)])))
+    print(tree.find_points_in_area(([np.float64(1), np.float64(0)], [np.float64(1), np.float64(2)])))
