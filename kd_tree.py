@@ -1,10 +1,10 @@
 import functools
+from typing import Optional
 
 import numpy as np
-from quickselect import floyd_rivest
 
-Point = list[np.float64]
-Rectangle = tuple[Point, Point]
+from geometric_types import *
+from visualizers import KDTree2DVisualizer
 
 
 class KDTNode:
@@ -22,7 +22,12 @@ class KDTNode:
 
 
 class KDTree:
-    def __init__(self, dimensions: int, points: list[Point]):
+    def __init__(self, dimensions: int, points: list[Point], visualizer: Optional[KDTree2DVisualizer] = None):
+        if dimensions > 2 and visualizer is not None:
+            raise ValueError("Can't visualize more than 2 dimensions")
+
+        self.visualizer: Optional[KDTree2DVisualizer] = visualizer
+
         self.dimensions = dimensions
 
         lower_left_point = functools.reduce(self._lower_left, points)
@@ -51,10 +56,19 @@ class KDTree:
             return KDTNode(points[0])
 
         coordinate_number = depth % self.dimensions
-        key = functools.cmp_to_key(lambda a, b: a[coordinate_number] - b[coordinate_number])
-        v1 = floyd_rivest.nth_smallest(points, len(points)//2 - 1, key=key)[coordinate_number]
-        v2 = floyd_rivest.nth_smallest(points, len(points)//2, key=key)[coordinate_number]
+        v1 = np.partition(points, len(points) // 2 - 1, axis=coordinate_number)[len(points) // 2 - 1][coordinate_number]
+        v2 = np.partition(points, len(points) // 2, axis=coordinate_number)[len(points) // 2][coordinate_number]
+
         division_val = (v1 + v2) / 2
+
+        if self.visualizer is not None:
+            mini = min(map(lambda x: x[(depth + 1) % self.dimensions], points))
+            maxi = max(map(lambda x: x[(depth + 1) % self.dimensions], points))
+            smaller_split_point = [mini, mini]
+            greater_split_point = [maxi, maxi]
+            smaller_split_point[depth % self.dimensions] = division_val
+            greater_split_point[depth % self.dimensions] = division_val
+            self.visualizer.add_split((smaller_split_point, greater_split_point))
 
         left_points = [p for p in points if p[coordinate_number] <= division_val]
         right_points = [p for p in points if p[coordinate_number] > division_val]
@@ -144,4 +158,4 @@ if __name__ == '__main__':
     ])
     tree = KDTree(2, pts)
 
-    print(tree.find_points_in_area(([np.float64(1), np.float64(0)], [np.float64(1), np.float64(2)])))
+    print(tree.find_points_in_area(([np.float64(0), np.float64(0)], [np.float64(1), np.float64(2)])))
