@@ -4,6 +4,8 @@ import matplotlib.collections as mcoll
 from matplotlib.widgets import Button
 import json as js
 
+from geometric_types import *
+
 TOLERANCE = 0.15
 
 
@@ -230,7 +232,24 @@ class Plot:
         plt.savefig(file_name + '.png' if file_name.find('.') == -1 else file_name)
 
 
+class KDTree2DVisualizer:
+    def __init__(self, all_points: list[Point]):
+        self.scenes = []
+        self.points = all_points
+        self.lines = []
 
-class KDTreeVisualizer:
-    def __init__(self):
-        pass
+        self.scenes.append(Scene([PointsCollection(self.points)]))
+
+    def put_points(self, points: list[Point]):
+        self.points = points
+        self.scenes.append(Scene([PointsCollection(self.points)]))
+
+    def create_plot(self):
+        return Plot(self.scenes)
+
+    def add_split(self, line: Line):
+        self.lines.append(line)
+        self.scenes.append(Scene(points=[PointsCollection(self.points)],
+                                 lines=[LinesCollection(self.lines)]
+                                 ))
+
