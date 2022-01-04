@@ -35,7 +35,7 @@ class KDTree:
 
         self.points_area = (lower_left_point, upper_right_point)
 
-        self.root = self._build_tree(points, 0)
+        self.root = self._build_tree(points, 0, lower_left_point, upper_right_point)
 
     @staticmethod
     def _upper_right(point1: Point, point2: Point):
@@ -49,23 +49,38 @@ class KDTree:
     def _is_inside_area(point: Point, area: Rectangle):
         return all(map(lambda x: x[0] <= x[1] <= x[2], zip(area[0], point, area[1])))
 
-    def _build_tree(self, points: list[Point], depth: int):
+    def _build_tree(self, points: list[Point], depth: int, lower_left: Point, upper_right: Point):
         if len(points) == 0:
             return KDTNode(None)
         if len(points) == 1:
             return KDTNode(points[0])
 
         coordinate_number = depth % self.dimensions
-        v1 = np.partition(points, len(points) // 2 - 1, axis=coordinate_number)[len(points) // 2 - 1][coordinate_number]
-        v2 = np.partition(points, len(points) // 2, axis=coordinate_number)[len(points) // 2][coordinate_number]
+        # print(np.array(points))
+        # partially_sorted = np.partition(
+        #     np.array(points),
+        #     kth=(len(points) // 2 - 1, len(points) // 2),
+        #     axis=coordinate_number
+        # )
+        # v1 = partially_sorted[len(points) // 2 - 1][coordinate_number]
+        # v2 = partially_sorted[len(points) // 2][coordinate_number]
+        #
+        # division_val = (v1 + v2) / 2
+        
+        points.sort(key=functools.cmp_to_key(lambda a, b: a[coordinate_number] - b[coordinate_number]))
+        median_i = len(points) // 2
+        v = max(map(lambda x: x[coordinate_number], points[:median_i]))
+        division_val = (points[median_i][coordinate_number] + v) / 2
 
-        division_val = (v1 + v2) / 2
-
+        new_upper_right = upper_right.copy()
+        new_upper_right[coordinate_number] = division_val
+        new_lower_left = lower_left.copy()
+        new_lower_left[coordinate_number] = division_val
         if self.visualizer is not None:
-            mini = min(map(lambda x: x[(depth + 1) % self.dimensions], points))
-            maxi = max(map(lambda x: x[(depth + 1) % self.dimensions], points))
-            smaller_split_point = [mini, mini]
-            greater_split_point = [maxi, maxi]
+            # mini = min(map(lambda x: x[(depth + 1) % self.dimensions], points))
+            # maxi = max(map(lambda x: x[(depth + 1) % self.dimensions], points))
+            smaller_split_point = lower_left.copy()
+            greater_split_point = upper_right.copy()
             smaller_split_point[depth % self.dimensions] = division_val
             greater_split_point[depth % self.dimensions] = division_val
             self.visualizer.add_split((smaller_split_point, greater_split_point))
@@ -75,8 +90,8 @@ class KDTree:
 
         new_node = KDTNode(division_val)
 
-        new_node.left = self._build_tree(left_points, depth + 1)
-        new_node.right = self._build_tree(right_points, depth + 1)
+        new_node.left = self._build_tree(left_points, depth + 1, lower_left, new_upper_right)
+        new_node.right = self._build_tree(right_points, depth + 1, new_lower_left, upper_right)
 
         return new_node
 
@@ -116,7 +131,13 @@ class KDTree:
         if root.left is None and root.right is None:
             if root.value is None or not self._is_inside_area(root.value, searched_region):
                 return []
+
+            if self.visualizer is not None:
+                self.visualizer.set_current_rectangle(current_region)
             return [root.value]
+
+        if self.visualizer is not None:
+            self.visualizer.set_current_rectangle(current_region)
 
         ans = []
 
@@ -132,15 +153,25 @@ class KDTree:
         elif self.get_intersection(searched_region, left_region) is not None:
             ans += self._find_points_util(searched_region, root.left, left_region, depth + 1)
 
+            if self.visualizer is not None:
+                self.visualizer.set_current_rectangle(current_region)
+
         if self.does_rectangle_include(searched_region, right_region):
             ans += self.get_all_leaves_in_subtree(root.right)
         elif self.get_intersection(searched_region, right_region) is not None:
             ans += self._find_points_util(searched_region, root.right, right_region, depth + 1)
 
+            if self.visualizer is not None:
+                self.visualizer.set_current_rectangle(current_region)
+
         return ans
 
     def find_points_in_area(self, area: Rectangle):
-        return self._find_points_util(area, self.root, self.points_area, 0)
+        if self.visualizer is not None:
+            self.visualizer.set_searched_rectangle(area)
+
+        points = self._find_points_util(area, self.root, self.points_area, 0)
+        return points
 
 
 if __name__ == '__main__':

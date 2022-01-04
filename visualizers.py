@@ -13,6 +13,22 @@ def dist(point1, point2):
     return np.sqrt(np.power(point1[0] - point2[0], 2) + np.power(point1[1] - point2[1], 2))
 
 
+def upper_right(point1: Point, point2: Point):
+    return [max(cor1, cor2) for cor1, cor2 in zip(point1, point2)]
+
+
+def lower_left(point1: Point, point2: Point):
+    return [min(cor1, cor2) for cor1, cor2 in zip(point1, point2)]
+
+
+def upper_left(point1: Point, point2: Point):
+    return [min(point1[0], point2[0]), max(point1[1], point2[1])]
+
+
+def lower_right(point1: Point, point2: Point):
+    return [max(point1[0], point2[0]), min(point1[1], point2[1])]
+
+
 class _ButtonCallback(object):
     def __init__(self, scenes):
         self.i = 0
@@ -236,20 +252,71 @@ class KDTree2DVisualizer:
     def __init__(self, all_points: list[Point]):
         self.scenes = []
         self.points = all_points
+        self.highlighted_points = []
         self.lines = []
+        self.current_rectangle_lines = []
+        self.searched_rectangle_lines = []
 
         self.scenes.append(Scene([PointsCollection(self.points)]))
 
-    def put_points(self, points: list[Point]):
-        self.points = points
-        self.scenes.append(Scene([PointsCollection(self.points)]))
-
-    def create_plot(self):
+    def get_plot(self):
         return Plot(self.scenes)
 
     def add_split(self, line: Line):
         self.lines.append(line)
-        self.scenes.append(Scene(points=[PointsCollection(self.points)],
-                                 lines=[LinesCollection(self.lines)]
-                                 ))
+        self.scenes.append(self._create_scene())
+
+    def _create_scene(self):
+        return Scene(
+            points=[
+                PointsCollection(
+                    points=self.points,
+                    color='black'
+                ),
+                PointsCollection(
+                    points=self.highlighted_points,
+                    color='yellow'),
+            ],
+            lines=[
+                LinesCollection(
+                    lines=self.lines.copy(),
+                    color='blue'
+                ),
+                LinesCollection(
+                    lines=self.current_rectangle_lines.copy(),
+                    color='green'
+                ),
+                LinesCollection(
+                    lines=self.searched_rectangle_lines.copy(),
+                    color='red'
+                )
+            ]
+        )
+
+    def highlight_points(self, points: list[Point]):
+        self.highlighted_points = points
+        self.scenes.append(self._create_scene())
+
+    def set_current_rectangle(self, rectangle: Rectangle):
+        self.current_rectangle_lines.clear()
+        for line in self._convert_rectangle_to_lines(rectangle):
+            self.current_rectangle_lines.append(line)
+
+        self.scenes.append(self._create_scene())
+
+    def set_searched_rectangle(self, rectangle: Rectangle):
+        self.searched_rectangle_lines.clear()
+        for line in self._convert_rectangle_to_lines(rectangle):
+            self.searched_rectangle_lines.append(line)
+
+        self.scenes.append(self._create_scene())
+
+    @staticmethod
+    def _convert_rectangle_to_lines(rectangle: Rectangle):
+        rectangle_lines = [(lower_left(*rectangle), lower_right(*rectangle)),
+                           (lower_left(*rectangle), upper_left(*rectangle)),
+                           (lower_right(*rectangle), upper_right(*rectangle)),
+                           (upper_left(*rectangle), upper_right(*rectangle))]
+
+        return rectangle_lines
 
