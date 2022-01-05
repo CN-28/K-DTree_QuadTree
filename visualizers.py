@@ -337,32 +337,56 @@ class KDTree2DVisualizer:
         return rectangle_lines
 
 
+
 class QuadtreeVisualizer:
     def __init__(self, points):
         self.lines = []
         self.scenes = [Scene([PointsCollection(points)])]
         self.points = []
+       
         
     def create_plot(self):
         return Plot(self.scenes)
 
-    def update_scenes(self, boundary, point):
-        if boundary is not None:
-            lower_left_point, upper_right_point = boundary
-            upper_left_point = (lower_left_point.x, upper_right_point.y)
-            lower_right_point = (upper_right_point.x, lower_left_point.y)
-            
-            self.lines.append([(lower_left_point.x, lower_left_point.y), upper_left_point])
-            self.lines.append([(lower_left_point.x, lower_left_point.y), lower_right_point])
-            self.lines.append([upper_left_point, (upper_right_point.x, upper_right_point.y)])
-            self.lines.append([(upper_right_point.x, upper_right_point.y), lower_right_point])
-        
-        if point is not None:
-            self.points.append((point.x, point.y))
 
-        if point is not None or boundary is not None:
-            self.scenes.append(Scene([PointsCollection(self.points.copy())], [LinesCollection(self.lines.copy())]))
-        
+    def _update_scenes(self):
+        self.scenes.append(Scene([PointsCollection(self.points.copy())], [LinesCollection(self.lines.copy())]))
+    
+
+    def add_point(self, point):
+        self.points.append((point.x, point.y))
+        self._update_scenes()
+
+
+    def add_boundary(self, boundary):
+        lower_left_point, upper_right_point = boundary
+        mid_point = ((lower_left_point.x + upper_right_point.x) / 2, (upper_right_point.y + lower_left_point.y) / 2)
+
+        self._add_boundary_util(((lower_left_point.x, mid_point[1]), (mid_point[0], upper_right_point.y)))
+        self._add_boundary_util((mid_point, (upper_right_point.x, upper_right_point.y)))
+        self._add_boundary_util(((mid_point[0], lower_left_point.y), (upper_right_point.x, mid_point[1])))
+        self._add_boundary_util(((lower_left_point.x, lower_left_point.y), mid_point))
+
+        self._update_scenes()
+
+
+    def add_starting_boundary(self, boundary):
+        lower_left_point, upper_right_point = boundary
+        self._add_boundary_util(((lower_left_point.x, lower_left_point.y), (upper_right_point.x, upper_right_point.y)))
+        self._update_scenes()
+
+
+    def _add_boundary_util(self, boundary):
+        lower_left_point, upper_right_point = boundary
+        upper_left_point = (lower_left_point[0], upper_right_point[1])
+        lower_right_point = (upper_right_point[0], lower_left_point[1])
+
+        self.lines.append([lower_left_point, lower_right_point])
+        self.lines.append([lower_left_point, upper_left_point])
+        self.lines.append([upper_left_point, upper_right_point])
+        self.lines.append([upper_right_point, lower_right_point])
+
+
     def update_query_borders(self, points_in_range, points_color):
         mini_x, mini_y, maxi_x, maxi_y = points_in_range[0][0], points_in_range[0][1], points_in_range[0][0], points_in_range[0][1]
    
