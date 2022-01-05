@@ -60,29 +60,21 @@ class KDTree:
             return KDTNode(points[0])
 
         coordinate_number = depth % self.dimensions
-        # print(np.array(points))
-        # partially_sorted = np.partition(
-        #     np.array(points),
-        #     kth=(len(points) // 2 - 1, len(points) // 2),
-        #     axis=coordinate_number
-        # )
-        # v1 = partially_sorted[len(points) // 2 - 1][coordinate_number]
-        # v2 = partially_sorted[len(points) // 2][coordinate_number]
-        #
-        # division_val = (v1 + v2) / 2
-        
-        points.sort(key=functools.cmp_to_key(lambda a, b: a[coordinate_number] - b[coordinate_number]))
-        median_i = len(points) // 2
-        v = max(map(lambda x: x[coordinate_number], points[:median_i]))
-        division_val = (points[median_i][coordinate_number] + v) / 2
+        coordinates_values = list(map(lambda x: x[coordinate_number], points))
+        partially_sorted = np.partition(
+            coordinates_values,
+            kth=(len(points) // 2 - 1, len(points) // 2),
+        )
+        v1 = partially_sorted[len(points) // 2 - 1]
+        v2 = partially_sorted[len(points) // 2]
 
+        division_val = (v1 + v2) / 2
+        
         new_upper_right = upper_right.copy()
         new_upper_right[coordinate_number] = division_val
         new_lower_left = lower_left.copy()
         new_lower_left[coordinate_number] = division_val
         if self.visualizer is not None:
-            # mini = min(map(lambda x: x[(depth + 1) % self.dimensions], points))
-            # maxi = max(map(lambda x: x[(depth + 1) % self.dimensions], points))
             smaller_split_point = lower_left.copy()
             greater_split_point = upper_right.copy()
             smaller_split_point[depth % self.dimensions] = division_val
