@@ -22,11 +22,13 @@ class KDTNode:
 
 
 class KDTree:
-    def __init__(self, dimensions: int, points: list[Point], visualizer: Optional[KDTree2DVisualizer] = None):
-        if dimensions > 2 and visualizer is not None:
+    def __init__(self, dimensions: int, points: list[Point], visualize: bool = False):
+        if dimensions != 2 and visualize:
             raise ValueError("Can't visualize more than 2 dimensions")
 
-        self.visualizer: Optional[KDTree2DVisualizer] = visualizer
+        self.visualizer: Optional[KDTree2DVisualizer] = None
+        if visualize:
+            self.visualizer = KDTree2DVisualizer(points)
 
         self.dimensions = dimensions
 
