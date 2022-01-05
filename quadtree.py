@@ -38,7 +38,8 @@ class _QuadtreeNode:
         self.top_right = _QuadtreeNode((mid_point, upper_right_point))
         self.bot_right = _QuadtreeNode((Point2D(mid_point.x, lower_left_point.y), Point2D(upper_right_point.x, mid_point.y)))
         self.bot_left = _QuadtreeNode((lower_left_point, mid_point))
-        visualizer.add_boundary(self.boundary)
+        if visualizer is not None:
+            visualizer.add_boundary(self.boundary)
         self.divided = True
 
 
@@ -75,7 +76,7 @@ class _QuadtreeNode:
 
 
 class Quadtree:
-    def __init__(self, points, boundary, capacity, visualize = False):
+    def __init__(self, points, boundary, capacity, visualize = None):
         self.boundary = Point2D(boundary[0][0], boundary[0][1]), Point2D(boundary[1][0], boundary[1][1])
         self.capacity = capacity
         self.visualizer = None
@@ -116,5 +117,6 @@ class Quadtree:
     def query_range(self, range):
         range = Point2D(range[0][0], range[0][1]), Point2D(range[1][0], range[1][1])
         points_in_range = self.root._query_range(range, self.visualizer)
-        self.visualizer.update_query_borders(points_in_range = list(map(lambda p: (p.x, p.y), points_in_range)), points_color = "green")
+        if self.visualizer is not None:
+            self.visualizer.update_query_borders(points_in_range = list(map(lambda p: (p.x, p.y), points_in_range)), points_color = "green")
         return points_in_range
