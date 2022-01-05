@@ -176,7 +176,9 @@ class KDTree:
 
         points = self._find_points_util(area, self.root, self.points_area, 0)
         if self.visualizer is not None:
+            self.visualizer.highlight_points(points)
             self.visualizer.end_searching()
+
         return points
 
 
