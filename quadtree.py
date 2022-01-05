@@ -75,14 +75,14 @@ class _QuadtreeNode:
 
 
 class Quadtree:
-    def __init__(self, points, boundary, capacity, visualizer = None):
-        self.visualizer = visualizer
+    def __init__(self, points, boundary, capacity, visualize = False):
         self.boundary = Point2D(boundary[0][0], boundary[0][1]), Point2D(boundary[1][0], boundary[1][1])
-
-        if visualizer is not None:
+        self.capacity = capacity
+        self.visualizer = None
+        if visualize:
+            self.visualizer = QuadtreeVisualizer(points)
             self.visualizer.add_starting_boundary(self.boundary)
 
-        self.capacity = capacity
         self.root = self._build_tree(map(lambda x: Point2D(x[0], x[1]), points))
         
     
