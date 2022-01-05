@@ -36,6 +36,8 @@ class KDTree:
         self.points_area = (lower_left_point, upper_right_point)
 
         self.root = self._build_tree(points, 0, lower_left_point, upper_right_point)
+        if self.visualizer is not None:
+            self.visualizer.end_tree_building()
 
     @staticmethod
     def _upper_right(point1: Point, point2: Point):
@@ -171,6 +173,8 @@ class KDTree:
             self.visualizer.set_searched_rectangle(area)
 
         points = self._find_points_util(area, self.root, self.points_area, 0)
+        if self.visualizer is not None:
+            self.visualizer.end_searching()
         return points
 
 

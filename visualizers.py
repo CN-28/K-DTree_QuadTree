@@ -256,11 +256,27 @@ class KDTree2DVisualizer:
         self.lines = []
         self.current_rectangle_lines = []
         self.searched_rectangle_lines = []
+        self.tree_building_scenes = []
+        self.searches = []
 
-        self.scenes.append(Scene([PointsCollection(self.points)]))
+        self.scenes.append(self._create_scene())
 
-    def get_plot(self):
-        return Plot(self.scenes)
+    def get_tree_building_plot(self):
+        return Plot(self.tree_building_scenes)
+
+    def get_searching_plot(self, i: int = -1):
+        if len(self.searches) <= 0:
+            return Plot()
+
+        return Plot(self.searches[i])
+
+    def end_tree_building(self):
+        self.tree_building_scenes = self.scenes
+        self.scenes = []
+
+    def end_searching(self):
+        self.searches.append(self.scenes)
+        self.scenes = []
 
     def add_split(self, line: Line):
         self.lines.append(line)
@@ -319,7 +335,6 @@ class KDTree2DVisualizer:
                            (upper_left(*rectangle), upper_right(*rectangle))]
 
         return rectangle_lines
-
 
 
 class QuadtreeVisualizer:
