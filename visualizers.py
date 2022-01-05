@@ -291,7 +291,7 @@ class KDTree2DVisualizer:
                 ),
                 PointsCollection(
                     points=self.highlighted_points,
-                    color='yellow'),
+                    color='orange'),
             ],
             lines=[
                 LinesCollection(
