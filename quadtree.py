@@ -1,8 +1,8 @@
 from random import uniform
 
-from visualizers import PointsCollection, QuadtreeVisualizer
+from visualizers import QuadtreeVisualizer
 
-class Point:
+class Point2D:
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -32,16 +32,13 @@ class _QuadtreeNode:
 
     def _subdivide(self, visualizer):
         lower_left_point, upper_right_point = self.boundary
-        mid_point = Point((lower_left_point.x + upper_right_point.x) / 2, (upper_right_point.y + lower_left_point.y) / 2)
+        mid_point = Point2D((lower_left_point.x + upper_right_point.x) / 2, (upper_right_point.y + lower_left_point.y) / 2)
 
-        self.top_left = _QuadtreeNode((Point(lower_left_point.x, mid_point.y), Point(mid_point.x, upper_right_point.y)))
+        self.top_left = _QuadtreeNode((Point2D(lower_left_point.x, mid_point.y), Point2D(mid_point.x, upper_right_point.y)))
         self.top_right = _QuadtreeNode((mid_point, upper_right_point))
-        self.bot_right = _QuadtreeNode((Point(mid_point.x, lower_left_point.y), Point(upper_right_point.x, mid_point.y)))
+        self.bot_right = _QuadtreeNode((Point2D(mid_point.x, lower_left_point.y), Point2D(upper_right_point.x, mid_point.y)))
         self.bot_left = _QuadtreeNode((lower_left_point, mid_point))
-        visualizer.update_scenes(boundary = (Point(lower_left_point.x, mid_point.y), Point(mid_point.x, upper_right_point.y)), point = None)
-        visualizer.update_scenes(boundary = (mid_point, upper_right_point), point = None)
-        visualizer.update_scenes(boundary = (Point(mid_point.x, lower_left_point.y), Point(upper_right_point.x, mid_point.y)), point = None)
-        visualizer.update_scenes(boundary = (lower_left_point, mid_point), point = None)
+        visualizer.add_boundary(self.boundary)
         self.divided = True
 
 
@@ -80,12 +77,13 @@ class _QuadtreeNode:
 class Quadtree:
     def __init__(self, points, boundary, capacity, visualizer = None):
         self.visualizer = visualizer
+        self.boundary = Point2D(boundary[0][0], boundary[0][1]), Point2D(boundary[1][0], boundary[1][1])
+
         if visualizer is not None:
-            self.visualizer.update_scenes(boundary = boundary, point = None)
+            self.visualizer.add_starting_boundary(self.boundary)
 
         self.capacity = capacity
-        self.boundary = boundary
-        self.root = self._build_tree(map(lambda x: Point(x[0], x[1]), points))
+        self.root = self._build_tree(map(lambda x: Point2D(x[0], x[1]), points))
         
     
     def insert(self, QTNode, point):
@@ -95,7 +93,7 @@ class Quadtree:
         if len(QTNode.points) < self.capacity:
             QTNode.points.append(point)
             if self.visualizer is not None:
-                self.visualizer.update_scenes(boundary = None, point = point)
+                self.visualizer.add_point(point)
             return True
         elif not QTNode.divided:
             QTNode._subdivide(self.visualizer)
@@ -116,18 +114,7 @@ class Quadtree:
     
 
     def query_range(self, range):
+        range = Point2D(range[0][0], range[0][1]), Point2D(range[1][0], range[1][1])
         points_in_range = self.root._query_range(range, self.visualizer)
         self.visualizer.update_query_borders(points_in_range = list(map(lambda p: (p.x, p.y), points_in_range)), points_color = "green")
         return points_in_range
-
-
-
-if __name__ == "__main__":
-    points = [(round(uniform(0, 100), 3), round(uniform(0, 100), 3)) for _ in range(150)]
-    quadtree = Quadtree(points, (Point(0, 0), Point(100, 100)), 4, QuadtreeVisualizer(points))
-
-
-    boundary = (Point(2, 2), Point(90, 20))
-
-    quadtree.query_range(boundary)
-    quadtree.visualizer.create_plot().draw()
