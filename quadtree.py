@@ -1,5 +1,7 @@
 from random import uniform
 
+from visualizers import PointsCollection, QuadtreeVisualizer
+
 class Point:
     def __init__(self, x, y):
         self.x = x
@@ -28,7 +30,7 @@ class _QuadtreeNode:
         self.points = []
     
 
-    def _subdivide(self):
+    def _subdivide(self, visualizer):
         lower_left_point, upper_right_point = self.boundary
         mid_point = Point((lower_left_point.x + upper_right_point.x) / 2, (upper_right_point.y + lower_left_point.y) / 2)
 
@@ -36,6 +38,10 @@ class _QuadtreeNode:
         self.top_right = _QuadtreeNode((mid_point, upper_right_point))
         self.bot_right = _QuadtreeNode((Point(mid_point.x, lower_left_point.y), Point(upper_right_point.x, mid_point.y)))
         self.bot_left = _QuadtreeNode((lower_left_point, mid_point))
+        visualizer.update_scenes(boundary = (Point(lower_left_point.x, mid_point.y), Point(mid_point.x, upper_right_point.y)), point = None)
+        visualizer.update_scenes(boundary = (mid_point, upper_right_point), point = None)
+        visualizer.update_scenes(boundary = (Point(mid_point.x, lower_left_point.y), Point(upper_right_point.x, mid_point.y)), point = None)
+        visualizer.update_scenes(boundary = (lower_left_point, mid_point), point = None)
         self.divided = True
 
 
@@ -45,7 +51,7 @@ class _QuadtreeNode:
         return lower_left_boundary.precedes(upper_right_range) and lower_left_range.precedes(upper_right_boundary)
 
 
-    def _query_range(self, range):
+    def _query_range(self, range, visualizer):
         points_in_range = []
 
         if not self._intersects(range):
@@ -57,10 +63,10 @@ class _QuadtreeNode:
                 points_in_range.append(point)
 
         if self.divided:
-            points_in_range.extend(self.top_left._query_range(range))
-            points_in_range.extend(self.top_right._query_range(range))
-            points_in_range.extend(self.bot_right._query_range(range))
-            points_in_range.extend(self.bot_left._query_range(range))
+            points_in_range.extend(self.top_left._query_range(range, visualizer))
+            points_in_range.extend(self.top_right._query_range(range, visualizer))
+            points_in_range.extend(self.bot_right._query_range(range, visualizer))
+            points_in_range.extend(self.bot_left._query_range(range, visualizer))
 
         return points_in_range
 
@@ -72,10 +78,14 @@ class _QuadtreeNode:
 
 
 class Quadtree:
-    def __init__(self, points, boundary, capacity):
+    def __init__(self, points, boundary, capacity, visualizer = None):
+        self.visualizer = visualizer
+        if visualizer is not None:
+            self.visualizer.update_scenes(boundary = boundary, point = None)
+
         self.capacity = capacity
         self.boundary = boundary
-        self.root = self._build_tree(points)
+        self.root = self._build_tree(map(lambda x: Point(x[0], x[1]), points))
         
     
     def insert(self, QTNode, point):
@@ -84,9 +94,11 @@ class Quadtree:
 
         if len(QTNode.points) < self.capacity:
             QTNode.points.append(point)
+            if self.visualizer is not None:
+                self.visualizer.update_scenes(boundary = None, point = point)
             return True
         elif not QTNode.divided:
-            QTNode._subdivide()
+            QTNode._subdivide(self.visualizer)
             
         if self.insert(QTNode.top_left, point): return True
         if self.insert(QTNode.top_right, point): return True
@@ -104,18 +116,18 @@ class Quadtree:
     
 
     def query_range(self, range):
-        return self.root._query_range(range)
+        points_in_range = self.root._query_range(range, self.visualizer)
+        self.visualizer.update_query_borders(points_in_range = list(map(lambda p: (p.x, p.y), points_in_range)), points_color = "green")
+        return points_in_range
 
 
 
 if __name__ == "__main__":
-    points = [Point(round(uniform(0, 10), 3), round(uniform(0, 10), 3)) for _ in range(10)]
-    quadtree = Quadtree(points, (Point(0, 0), Point(10, 10)), 4)
-    
-    print("All points")
-    [print(point) for point in points]
-    print()
+    points = [(round(uniform(0, 100), 3), round(uniform(0, 100), 3)) for _ in range(150)]
+    quadtree = Quadtree(points, (Point(0, 0), Point(100, 100)), 4, QuadtreeVisualizer(points))
 
-    print("Found points")
-    boundary = (Point(2, 2), Point(8, 8))
-    [print(point) for point in quadtree.query_range(boundary)]
+
+    boundary = (Point(2, 2), Point(90, 20))
+
+    quadtree.query_range(boundary)
+    quadtree.visualizer.create_plot().draw()

@@ -320,3 +320,50 @@ class KDTree2DVisualizer:
 
         return rectangle_lines
 
+
+
+class QuadtreeVisualizer:
+    def __init__(self, points):
+        self.lines = []
+        self.scenes = [Scene([PointsCollection(points)])]
+        self.points = []
+        
+    def create_plot(self):
+        return Plot(self.scenes)
+
+    def update_scenes(self, boundary, point):
+        if boundary is not None:
+            lower_left_point, upper_right_point = boundary
+            upper_left_point = (lower_left_point.x, upper_right_point.y)
+            lower_right_point = (upper_right_point.x, lower_left_point.y)
+            
+            self.lines.append([(lower_left_point.x, lower_left_point.y), upper_left_point])
+            self.lines.append([(lower_left_point.x, lower_left_point.y), lower_right_point])
+            self.lines.append([upper_left_point, (upper_right_point.x, upper_right_point.y)])
+            self.lines.append([(upper_right_point.x, upper_right_point.y), lower_right_point])
+        
+        if point is not None:
+            self.points.append((point.x, point.y))
+
+        if point is not None or boundary is not None:
+            self.scenes.append(Scene([PointsCollection(self.points.copy())], [LinesCollection(self.lines.copy())]))
+        
+    def update_query_borders(self, points_in_range, points_color):
+        mini_x, mini_y, maxi_x, maxi_y = points_in_range[0][0], points_in_range[0][1], points_in_range[0][0], points_in_range[0][1]
+   
+        for point in points_in_range:
+            if point[0] < mini_x:
+                mini_x = point[0]
+            elif point[0] > maxi_x:
+                maxi_x = point[0]
+            
+            if point[1] < mini_y:
+                mini_y = point[1]
+            elif point[1] > maxi_y:
+                maxi_y = point[1]
+
+        lower_left_point, upper_right_point = (mini_x, mini_y), (maxi_x, maxi_y)
+        upper_left_point = lower_left_point[0], upper_right_point[1]
+        lower_right_point = upper_right_point[0], lower_left_point[1]
+        query_lines = [[lower_left_point, lower_right_point], [lower_left_point, upper_left_point], [upper_left_point, upper_right_point], [upper_right_point, lower_right_point]]
+        self.scenes.append(Scene([PointsCollection(self.points.copy()), PointsCollection(points_in_range.copy(), color = points_color)], [LinesCollection(self.lines.copy()), LinesCollection(query_lines, color = points_color)]))
