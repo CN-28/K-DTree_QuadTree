@@ -49,24 +49,25 @@ class _QuadtreeNode:
         return lower_left_boundary.precedes(upper_right_range) and lower_left_range.precedes(upper_right_boundary)
 
 
-    def _query_range(self, range, visualizer):
-        points_in_range = []
-
+    def _query_range(self, Quadtree, range, visualizer):
         if not self._intersects(range):
-            return []
+            return
 
         lower_left_range, upper_right_range = range
+        added_points = []
         for point in self.points:
             if point.precedes(upper_right_range) and point.follows(lower_left_range):
-                points_in_range.append(point)
+                Quadtree.query_res.append((point.x, point.y))
+                added_points.append((point.x, point.y))
+        
+        if Quadtree.visualizer is not None:
+            Quadtree.visualizer.update_query_visualization(range, self.boundary, Quadtree.query_res, added_points)
 
         if self.divided:
-            points_in_range.extend(self.top_left._query_range(range, visualizer))
-            points_in_range.extend(self.top_right._query_range(range, visualizer))
-            points_in_range.extend(self.bot_right._query_range(range, visualizer))
-            points_in_range.extend(self.bot_left._query_range(range, visualizer))
-
-        return points_in_range
+            self.top_left._query_range(Quadtree, range, visualizer)
+            self.top_right._query_range(Quadtree, range, visualizer)
+            self.bot_right._query_range(Quadtree, range, visualizer)
+            self.bot_left._query_range(Quadtree, range, visualizer)
 
 
     def __contains__(self, point):
@@ -80,6 +81,7 @@ class Quadtree:
         self.boundary = Point2D(boundary[0][0], boundary[0][1]), Point2D(boundary[1][0], boundary[1][1])
         self.capacity = capacity
         self.visualizer = None
+        self.query_res = []
         if visualize:
             self.visualizer = QuadtreeVisualizer(points)
             self.visualizer.add_starting_boundary(self.boundary)
@@ -115,8 +117,15 @@ class Quadtree:
     
 
     def query_range(self, range):
+        self.query_res = []
         range = Point2D(range[0][0], range[0][1]), Point2D(range[1][0], range[1][1])
-        points_in_range = self.root._query_range(range, self.visualizer)
+
         if self.visualizer is not None:
-            self.visualizer.update_query_borders(points_in_range = list(map(lambda p: (p.x, p.y), points_in_range)), points_color = "green")
-        return points_in_range
+            self.visualizer.update_query_visualization(range)
+        
+        self.root._query_range(self, range, self.visualizer)
+
+        if self.visualizer is not None:
+            self.visualizer.update_query_visualization(range, None, self.query_res)
+        
+        return self.query_res
