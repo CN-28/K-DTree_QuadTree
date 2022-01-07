@@ -28,6 +28,7 @@ class _QuadtreeNode:
         self.divided = False
         self.boundary = boundary
         self.points = []
+        self.subtree_points = []
     
 
     def _subdivide(self, visualizer):
@@ -48,9 +49,19 @@ class _QuadtreeNode:
         lower_left_range, upper_right_range = range
         return lower_left_boundary.precedes(upper_right_range) and lower_left_range.precedes(upper_right_boundary)
 
+    def _completely_intersects(self, range):
+        lower_left_boundary, upper_right_boundary = self.boundary
+        lower_left_range, upper_right_range = range
+        return lower_left_range.precedes(lower_left_boundary) and upper_right_range.follows(upper_right_boundary)
 
     def _query_range(self, Quadtree, range, visualizer):
         if not self._intersects(range):
+            return
+
+        if self._completely_intersects(range):
+            Quadtree.query_res.extend(self.subtree_points)
+            if Quadtree.visualizer is not None:
+                Quadtree.visualizer.update_query_visualization(range, self.boundary, Quadtree.query_res, self.subtree_points)
             return
 
         lower_left_range, upper_right_range = range
@@ -93,6 +104,7 @@ class Quadtree:
         if not QTNode or point not in QTNode:
             return False
 
+        QTNode.subtree_points.append(point)
         if len(QTNode.points) < self.capacity:
             QTNode.points.append(point)
             if self.visualizer is not None:
