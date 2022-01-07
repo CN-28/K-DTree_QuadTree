@@ -33,10 +33,7 @@ def check_array_performance(dataset, test):
     print(f"Dataset {test}:")
 
     query_start_time = time()
-    res = []
-    for i in range(len(dataset)):
-        if check(dataset[i]):
-            res.append(dataset[i])
+    list(filter(check, dataset))
     print("array query time ", time() - query_start_time, end="\n\n")
 
 
