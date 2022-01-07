@@ -343,11 +343,14 @@ class QuadtreeVisualizer:
         self.lines = []
         self.scenes = [Scene([PointsCollection(points)])]
         self.points = []
+        self.scenes_query = []
        
         
-    def create_plot(self):
+    def create_build_plot(self):
         return Plot(self.scenes)
 
+    def create_query_plot(self):
+        return Plot(self.scenes_query)
 
     def _update_scenes(self):
         self.scenes.append(Scene([PointsCollection(self.points.copy())], [LinesCollection(self.lines.copy())]))
@@ -387,22 +390,19 @@ class QuadtreeVisualizer:
         self.lines.append([upper_right_point, lower_right_point])
 
 
-    def update_query_borders(self, points_in_range, points_color):
-        mini_x, mini_y, maxi_x, maxi_y = points_in_range[0][0], points_in_range[0][1], points_in_range[0][0], points_in_range[0][1]
-   
-        for point in points_in_range:
-            if point[0] < mini_x:
-                mini_x = point[0]
-            elif point[0] > maxi_x:
-                maxi_x = point[0]
-            
-            if point[1] < mini_y:
-                mini_y = point[1]
-            elif point[1] > maxi_y:
-                maxi_y = point[1]
+    def update_query_visualization(self, searched_area_boundary, node_boundary = None, points_in_range = None, added_points = None):
+        lower_left_area_point, upper_right_area_point = (searched_area_boundary[0].x, searched_area_boundary[0].y), (searched_area_boundary[1].x, searched_area_boundary[1].y)
+        upper_left_area_point, lower_right_area_point = (lower_left_area_point[0], upper_right_area_point[1]), (upper_right_area_point[0], lower_left_area_point[1])
+        searched_area_lines = [[lower_left_area_point, lower_right_area_point], [lower_left_area_point, upper_left_area_point], [upper_left_area_point, upper_right_area_point], [upper_right_area_point, lower_right_area_point]]
 
-        lower_left_point, upper_right_point = (mini_x, mini_y), (maxi_x, maxi_y)
-        upper_left_point = lower_left_point[0], upper_right_point[1]
-        lower_right_point = upper_right_point[0], lower_left_point[1]
-        query_lines = [[lower_left_point, lower_right_point], [lower_left_point, upper_left_point], [upper_left_point, upper_right_point], [upper_right_point, lower_right_point]]
-        self.scenes.append(Scene([PointsCollection(self.points.copy()), PointsCollection(points_in_range.copy(), color = points_color)], [LinesCollection(self.lines.copy()), LinesCollection(query_lines, color = points_color)]))
+        if searched_area_boundary is not None and node_boundary is None and points_in_range is None:
+            self.scenes_query.append(Scene([PointsCollection(self.points.copy())], [LinesCollection(self.lines.copy()), LinesCollection(searched_area_lines.copy(), color = "green")]))
+
+        elif node_boundary is None:
+            self.scenes_query.append(Scene([PointsCollection(self.points.copy()), PointsCollection(points_in_range.copy(), color = "green")], [LinesCollection(self.lines.copy()), LinesCollection(searched_area_lines.copy(), color = "green")]))
+
+        else:
+            lower_left_boundary_point, upper_right_boundary_point = (node_boundary[0].x, node_boundary[0].y), (node_boundary[1].x, node_boundary[1].y)
+            upper_left_boundary_point, lower_right_boundary_point = (lower_left_boundary_point[0], upper_right_boundary_point[1]), (upper_right_boundary_point[0], lower_left_boundary_point[1])
+            node_boundary_lines = [[lower_left_boundary_point, lower_right_boundary_point], [lower_left_boundary_point, upper_left_boundary_point], [upper_left_boundary_point, upper_right_boundary_point], [upper_right_boundary_point, lower_right_boundary_point]]
+            self.scenes_query.append(Scene([PointsCollection(self.points.copy()), PointsCollection(points_in_range.copy(), color = "green"), PointsCollection(added_points.copy(), color = "red")], [LinesCollection(self.lines.copy()), LinesCollection(node_boundary_lines.copy(), color = "red"), LinesCollection(searched_area_lines.copy(), color = "green")]))
